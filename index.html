@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <title>Noise Lens</title>
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="title">Noise Lens</div>
+        <div class="subtitle">Upload an image to surface diffusion noise.</div>
+      </header>
+      <section class="controls">
+        <label class="file">
+          <input id="fileInput" type="file" accept="image/*">
+          <span>Upload image</span>
+        </label>
+        <button id="sampleBtn" type="button">Load sample</button>
+        <div class="slider">
+          <label for="sensitivity">Sensitivity</label>
+          <input id="sensitivity" type="range" min="0" max="100" value="60">
+          <div class="value" id="sensitivityValue">60</div>
+        </div>
+      </section>
+      <section class="canvases">
+        <div class="panel">
+          <div class="panel-title">Original</div>
+          <canvas id="originalCanvas"></canvas>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Noise Map</div>
+          <canvas id="noiseCanvas"></canvas>
+        </div>
+      </section>
+      <div class="hint" id="status">Drop an image or use the sample.</div>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
