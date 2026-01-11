@@ -205,6 +205,10 @@ canvas {
   background: var(--bg-deep);
 }
 
+.hidden-canvas {
+  display: none;
+}
+
 .hint {
   font-size: 13px;
   color: var(--muted);
