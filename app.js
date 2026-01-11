@@ -21,6 +21,8 @@ const NOISE_AFTER_CTX = NOISE_AFTER_CANVAS.getContext("2d");
 
 let width = 0;
 let height = 0;
+let originalWidth = 0;
+let originalHeight = 0;
 let cleanImageData = null;
 
 const setStatus = (text) => {
@@ -99,6 +101,8 @@ const loadImage = (src, label) => new Promise((resolve, reject) => {
 });
 
 const renderImage = (img, label) => {
+  originalWidth = img.width;
+  originalHeight = img.height;
   const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
   width = Math.max(1, Math.floor(img.width * scale));
   height = Math.max(1, Math.floor(img.height * scale));
@@ -106,18 +110,26 @@ const renderImage = (img, label) => {
   ORIGINAL_CANVAS.height = height;
   NOISE_BEFORE_CANVAS.width = width;
   NOISE_BEFORE_CANVAS.height = height;
-  CLEAN_CANVAS.width = width;
-  CLEAN_CANVAS.height = height;
+  CLEAN_CANVAS.width = originalWidth;
+  CLEAN_CANVAS.height = originalHeight;
   NOISE_AFTER_CANVAS.width = width;
   NOISE_AFTER_CANVAS.height = height;
   ORIGINAL_CTX.clearRect(0, 0, width, height);
   ORIGINAL_CTX.drawImage(img, 0, 0, width, height);
   const imageData = ORIGINAL_CTX.getImageData(0, 0, width, height);
+  const fullCanvas = document.createElement("canvas");
+  fullCanvas.width = originalWidth;
+  fullCanvas.height = originalHeight;
+  const fullCtx = fullCanvas.getContext("2d", { willReadFrequently: true });
+  fullCtx.drawImage(img, 0, 0, originalWidth, originalHeight);
+  const fullImageData = fullCtx.getImageData(0, 0, originalWidth, originalHeight);
   setStatus("Processing noise maps...");
   const noiseBefore = computeNoise(imageData.data, width, height);
-  cleanImageData = cleanImage(imageData, width, height);
-  CLEAN_CTX.putImageData(cleanImageData, 0, 0);
-  const noiseAfter = computeNoise(cleanImageData.data, width, height);
+  const cleanDisplay = cleanImage(imageData, width, height);
+  const cleanFull = cleanImage(fullImageData, originalWidth, originalHeight);
+  cleanImageData = cleanFull;
+  CLEAN_CTX.putImageData(cleanFull, 0, 0);
+  const noiseAfter = computeNoise(cleanDisplay.data, width, height);
   drawNoise(NOISE_BEFORE_CTX, noiseBefore);
   drawNoise(NOISE_AFTER_CTX, noiseAfter);
   DOWNLOAD_BTN.disabled = false;
