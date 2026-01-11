@@ -3,21 +3,25 @@ const SAMPLE_PATH = "4c598cf7-ce48-4897-b4ba-24e69dae7c87.png";
 const THRESHOLD_MAX = 8;
 const GAIN = 1.4;
 const GAMMA = 0.35;
+const CLEAN_THRESHOLD = 249;
 
 const FILE_INPUT = document.getElementById("fileInput");
 const SAMPLE_BTN = document.getElementById("sampleBtn");
-const SENSITIVITY_INPUT = document.getElementById("sensitivity");
-const SENSITIVITY_VALUE = document.getElementById("sensitivityValue");
+const DOWNLOAD_BTN = document.getElementById("downloadBtn");
 const ORIGINAL_CANVAS = document.getElementById("originalCanvas");
-const NOISE_CANVAS = document.getElementById("noiseCanvas");
+const NOISE_BEFORE_CANVAS = document.getElementById("noiseBeforeCanvas");
+const CLEAN_CANVAS = document.getElementById("cleanCanvas");
+const NOISE_AFTER_CANVAS = document.getElementById("noiseAfterCanvas");
 const STATUS = document.getElementById("status");
 
 const ORIGINAL_CTX = ORIGINAL_CANVAS.getContext("2d", { willReadFrequently: true });
-const NOISE_CTX = NOISE_CANVAS.getContext("2d");
+const NOISE_BEFORE_CTX = NOISE_BEFORE_CANVAS.getContext("2d");
+const CLEAN_CTX = CLEAN_CANVAS.getContext("2d", { willReadFrequently: true });
+const NOISE_AFTER_CTX = NOISE_AFTER_CANVAS.getContext("2d");
 
 let width = 0;
 let height = 0;
-let noiseValues = null;
+let cleanImageData = null;
 
 const setStatus = (text) => {
   STATUS.textContent = text;
@@ -35,14 +39,17 @@ const handleSample = () => {
   loadFromPath(SAMPLE_PATH, "sample");
 };
 
-const handleSensitivity = () => {
-  SENSITIVITY_VALUE.textContent = SENSITIVITY_INPUT.value;
-  drawNoise();
-};
-
 FILE_INPUT.addEventListener("change", handleFile);
 SAMPLE_BTN.addEventListener("click", handleSample);
-SENSITIVITY_INPUT.addEventListener("input", handleSensitivity);
+DOWNLOAD_BTN.addEventListener("click", () => {
+  if (!cleanImageData || width === 0 || height === 0) {
+    return;
+  }
+  const link = document.createElement("a");
+  link.download = "cleaned.png";
+  link.href = CLEAN_CANVAS.toDataURL("image/png");
+  link.click();
+});
 
 window.addEventListener("dragover", (event) => {
   event.preventDefault();
@@ -97,14 +104,23 @@ const renderImage = (img, label) => {
   height = Math.max(1, Math.floor(img.height * scale));
   ORIGINAL_CANVAS.width = width;
   ORIGINAL_CANVAS.height = height;
-  NOISE_CANVAS.width = width;
-  NOISE_CANVAS.height = height;
+  NOISE_BEFORE_CANVAS.width = width;
+  NOISE_BEFORE_CANVAS.height = height;
+  CLEAN_CANVAS.width = width;
+  CLEAN_CANVAS.height = height;
+  NOISE_AFTER_CANVAS.width = width;
+  NOISE_AFTER_CANVAS.height = height;
   ORIGINAL_CTX.clearRect(0, 0, width, height);
   ORIGINAL_CTX.drawImage(img, 0, 0, width, height);
   const imageData = ORIGINAL_CTX.getImageData(0, 0, width, height);
-  setStatus("Processing noise map...");
-  noiseValues = computeNoise(imageData.data, width, height);
-  drawNoise();
+  setStatus("Processing noise maps...");
+  const noiseBefore = computeNoise(imageData.data, width, height);
+  cleanImageData = cleanImage(imageData, width, height);
+  CLEAN_CTX.putImageData(cleanImageData, 0, 0);
+  const noiseAfter = computeNoise(cleanImageData.data, width, height);
+  drawNoise(NOISE_BEFORE_CTX, noiseBefore);
+  drawNoise(NOISE_AFTER_CTX, noiseAfter);
+  DOWNLOAD_BTN.disabled = false;
   const labelText = label ? `Loaded ${label}` : "Loaded image";
   setStatus(`${labelText} (${width} x ${height})`);
 };
@@ -148,17 +164,15 @@ const computeNoise = (data, w, h) => {
   return values;
 };
 
-const drawNoise = () => {
-  if (!noiseValues || width === 0 || height === 0) {
+const drawNoise = (ctx, values) => {
+  if (!values || width === 0 || height === 0) {
     return;
   }
-  const sensitivity = Number(SENSITIVITY_INPUT.value);
-  SENSITIVITY_VALUE.textContent = sensitivity;
-  const threshold = THRESHOLD_MAX * (1 - (sensitivity / 100));
-  const output = NOISE_CTX.createImageData(width, height);
+  const threshold = THRESHOLD_MAX * (1 - 1);
+  const output = ctx.createImageData(width, height);
   const outData = output.data;
-  for (let i = 0; i < noiseValues.length; i += 1) {
-    let v = noiseValues[i] - threshold;
+  for (let i = 0; i < values.length; i += 1) {
+    let v = values[i] - threshold;
     if (v < 0) {
       v = 0;
     }
@@ -171,5 +185,29 @@ const drawNoise = () => {
     outData[idx + 2] = v;
     outData[idx + 3] = 255;
   }
-  NOISE_CTX.putImageData(output, 0, 0);
+  ctx.putImageData(output, 0, 0);
+};
+
+const cleanImage = (imageData, w, h) => {
+  const output = new ImageData(w, h);
+  const input = imageData.data;
+  const out = output.data;
+  for (let i = 0; i < input.length; i += 4) {
+    const r = input[i];
+    const g = input[i + 1];
+    const b = input[i + 2];
+    const a = input[i + 3];
+    if (r >= CLEAN_THRESHOLD && g >= CLEAN_THRESHOLD && b >= CLEAN_THRESHOLD) {
+      out[i] = 255;
+      out[i + 1] = 255;
+      out[i + 2] = 255;
+      out[i + 3] = a;
+    } else {
+      out[i] = r;
+      out[i + 1] = g;
+      out[i + 2] = b;
+      out[i + 3] = a;
+    }
+  }
+  return output;
 };

@@ -21,11 +21,7 @@
           <span>Upload image</span>
         </label>
         <button id="sampleBtn" type="button">Load sample</button>
-        <div class="slider">
-          <label for="sensitivity">Sensitivity</label>
-          <input id="sensitivity" type="range" min="0" max="100" value="60">
-          <div class="value" id="sensitivityValue">60</div>
-        </div>
+        <button id="downloadBtn" type="button" disabled>Download cleaned</button>
       </section>
       <section class="canvases">
         <div class="panel">
@@ -33,8 +29,16 @@
           <canvas id="originalCanvas"></canvas>
         </div>
         <div class="panel">
-          <div class="panel-title">Noise Map</div>
-          <canvas id="noiseCanvas"></canvas>
+          <div class="panel-title">Noise Map (Before Clean)</div>
+          <canvas id="noiseBeforeCanvas"></canvas>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Cleaned</div>
+          <canvas id="cleanCanvas"></canvas>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Noise Map (After Clean)</div>
+          <canvas id="noiseAfterCanvas"></canvas>
         </div>
       </section>
       <div class="hint" id="status">Drop an image or use the sample.</div>
