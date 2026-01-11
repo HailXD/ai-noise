@@ -1,7 +1,8 @@
 const MAX_DIM = 1400;
 const SAMPLE_PATH = "4c598cf7-ce48-4897-b4ba-24e69dae7c87.png";
-const THRESHOLD_MAX = 40;
-const GAIN = 6;
+const THRESHOLD_MAX = 8;
+const GAIN = 1.4;
+const GAMMA = 0.35;
 
 const FILE_INPUT = document.getElementById("fileInput");
 const SAMPLE_BTN = document.getElementById("sampleBtn");
@@ -124,6 +125,9 @@ const computeNoise = (data, w, h) => {
       for (let yy = y0; yy <= y1; yy += 1) {
         const row = yy * stride;
         for (let xx = x0; xx <= x1; xx += 1) {
+          if (yy === y && xx === x) {
+            continue;
+          }
           const idx = row + (xx * 4);
           sumR += data[idx];
           sumG += data[idx + 1];
@@ -132,9 +136,9 @@ const computeNoise = (data, w, h) => {
         }
       }
       const idx = (y * stride) + (x * 4);
-      const avgR = sumR / count;
-      const avgG = sumG / count;
-      const avgB = sumB / count;
+      const avgR = count > 0 ? sumR / count : data[idx];
+      const avgG = count > 0 ? sumG / count : data[idx + 1];
+      const avgB = count > 0 ? sumB / count : data[idx + 2];
       const diffR = Math.abs(data[idx] - avgR);
       const diffG = Math.abs(data[idx + 1] - avgG);
       const diffB = Math.abs(data[idx + 2] - avgB);
@@ -158,7 +162,9 @@ const drawNoise = () => {
     if (v < 0) {
       v = 0;
     }
-    v = Math.min(255, v * GAIN);
+    const normalized = v / 255;
+    const boosted = Math.pow(normalized, GAMMA);
+    v = Math.min(255, boosted * 255 * GAIN);
     const idx = i * 4;
     outData[idx] = v;
     outData[idx + 1] = v;
